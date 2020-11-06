@@ -1,3 +1,7 @@
 The Purpose of this script and csv files are to initialize the database. 
 THEY ARE NOT A REQUIRED PART OF THE FINAL PROGRAM.
 Extraction of information from three csv files to postgresql database only.
+
+NOTE: csv files are not uploaded due to storage limit of github. 
+Download the csv files at https://www.kaggle.com/rounakbanik/the-movies-dataset?select=links_small.csv
+You only need movie_metadata.csv, credits.csv, and keywords.csv
