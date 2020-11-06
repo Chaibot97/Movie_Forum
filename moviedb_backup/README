@@ -1,0 +1,3 @@
+The database backup files provides a way to reconstruct the entire database WITHOUT running the csv processing script.
+The backup files are in the format of plain sql. i.e. "INSERT INTO .... VALUES ...."
+Google to find how to import the backup into your postgresql database. There are a lot of resources out there. GLHF!

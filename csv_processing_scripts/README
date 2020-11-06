@@ -1,0 +1,3 @@
+The Purpose of this script and csv files are to initialize the database. 
+THEY ARE NOT A REQUIRED PART OF THE FINAL PROGRAM.
+Extraction of information from three csv files to postgresql database only.
