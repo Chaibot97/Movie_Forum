@@ -8,5 +8,4 @@ _To reconstruct the database, run_
 
 Note:
 1. The plain sql file is compressed in a zip file in order to fit in 100mb github storage limit.
-2. The backup could be found at https://drive.google.com/file/d/1DOys5WJI-BcnhRcdVOHpOfGBUAHbRmyN/view
 
