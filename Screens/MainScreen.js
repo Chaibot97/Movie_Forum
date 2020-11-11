@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, Image, Picker, TouchableOpacity, ScrollView, FlatList, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, Picker, TouchableOpacity, ScrollView, Dimensions, RefreshControl } from 'react-native';
 import { SearchBar } from 'react-native-elements';
 
 import MovieList from '../components/MovieList';
@@ -48,7 +48,6 @@ class MainScreen extends Component {
   // #region Search Bar
 
   searchMovie = async () => {
-    console.log('search triggered');
     const { searchKey, searchCategory } = this.state;
 
     if (searchKey && searchKey !== '') {
@@ -59,13 +58,17 @@ class MainScreen extends Component {
   }
 
   renderSearchResult = () => {
-    const { searchResult } = this.state;
+    const { searchKey, searchResult } = this.state;
 
+    const title = `Results For \`${searchKey}\``;
     return (
-      <MovieList
-        movies={searchResult}
-        isHorizontal={false}
-      />
+      <>
+      <Text style={{fontSize: 26, color:'white', marginLeft: 20}}>{title}</Text>
+        <MovieList
+          movies={searchResult}
+          isHorizontal={false}
+        />
+      </>
     )
   }
 
@@ -162,13 +165,18 @@ class MainScreen extends Component {
   // #endregion
 
   render() {
-    const { searchResult } = this.state;
+    const { searchResult, isLoading } = this.state;
 
     // get all the data from states
     return (
       <View style={styles.container}>
         {this.renderHeader()}
-        <ScrollView style={{flex: 1, backgroundColor: 'black'}}>
+        <ScrollView 
+          style={{flex: 1, backgroundColor: 'black'}}
+          refreshControl={
+            <RefreshControl refreshing={isLoading} onRefresh={this.fetchMovies} />
+          }
+          >
           {this.renderTrendingMovie()}
           {searchResult === null ? this.renderMovies() : this.renderSearchResult()}
         </ScrollView>
