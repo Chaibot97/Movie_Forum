@@ -24,20 +24,85 @@ app.use(function (req, res, next) {
   next();
 });
 
-app.get('/movies/:num', (req, res) => {  
-  console.log('GET', req.originalUrl);
-  const { num } = req.params;
-  const query = {
-    text: 'select id, poster_url, title,language from moviedb.movie limit $1',
-    values: [num],
-  };
+const send_query = (query, res) => {
   db.query(query)
     .then((data) => {
       res.send(data.rows);
     })
     .catch(e => console.error(e.stack))
+}
+
+app.get('/movies/:limit', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { limit } = req.params;
+  const query = {
+    text: 'SELECT id,vote_avg, vote_count, poster_url, title, language, overview FROM moviedb.movie ORDER BY id DESC LIMIT $1',
+    values: [limit],
+  };
+  send_query(query, res);
 })
 
+app.get('/movies/rating/:limit', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { limit } = req.params;
+  const query = {
+    text: 'SELECT id,vote_avg,vote_count,  poster_url, title, language, overview FROM moviedb.movie WHERE vote_count>100 ORDER BY vote_avg DESC LIMIT $1',
+    values: [limit],
+  };
+  send_query(query, res);
+})
+
+app.get('/movies/:name/:limit', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { name, limit } = req.params;
+  const query = {
+    text: `SELECT id,vote_avg,vote_count,  poster_url, title, language, overview 
+    FROM moviedb.movie WHERE LOWER(title) like \'%${name.toLowerCase()}%\' 
+    ORDER BY id DESC LIMIT $1`,
+    values: [limit],
+  };
+  send_query(query, res);
+})
+
+app.get('/actors/:id', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { id } = req.params;
+  const query = {
+    text: 'SELECT name, character, profile_url FROM moviedb.movie_cast t, moviedb.actor WHERE movie_id = $1 and actor_id = id ORDER BY t.order',
+    values: [id],
+  };
+  send_query(query, res);
+})
+
+app.get('/keywords/:id', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { id } = req.params;
+  const query = {
+    text: 'SELECT name FROM moviedb.movie_keyword, moviedb.keyword WHERE movie_id = $1 and keyword_id = id',
+    values: [id],
+  };
+  send_query(query, res);
+})
+
+app.get('/genre/:id', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { id } = req.params;
+  const query = {
+    text: 'SELECT name FROM moviedb.movie_genre, moviedb.genre WHERE movie_id = $1 and genre_id = id',
+    values: [id],
+  };
+  send_query(query, res);
+})
+
+app.get('/collection/:id', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { id } = req.params;
+  const query = {
+    text: 'SELECT name, poster_url, backdrop_url FROM moviedb.movie_collection, moviedb.collection WHERE movie_id = $1 and collection_id = id',
+    values: [id],
+  };
+  send_query(query, res);
+})
 
 const server = app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
