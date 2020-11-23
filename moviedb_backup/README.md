@@ -9,3 +9,4 @@ _To reconstruct the database, run_
 Note:
 1. The plain sql file is compressed in a zip file in order to fit in 100mb github storage limit.
 
+pg_ctl -D /usr/local/var/postgres start

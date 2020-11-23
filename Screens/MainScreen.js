@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, Picker, TouchableOpacity, ScrollView, Di
 import { SearchBar } from 'react-native-elements';
 
 import MovieList from '../components/MovieList';
+import MovieDetail from '../components/MovieDetail';
 import { getPopularMovies, getHighestRatedMovies, getRecommendations, searchMovieByKey } from '../api/dbo';
 
 const SEARCH_KEY_DEFAULT = '';
@@ -20,6 +21,7 @@ class MainScreen extends Component {
       searchKey: SEARCH_KEY_DEFAULT,
       searchCategory: SEARCH_CAT_DEFAULT,
       searchResult: null,
+      selectedMovie: null,
       isLoading: false
     }
   };
@@ -57,21 +59,6 @@ class MainScreen extends Component {
     }
   }
 
-  renderSearchResult = () => {
-    const { searchKey, searchResult } = this.state;
-
-    const title = `Results For \`${searchKey}\``;
-    return (
-      <>
-      <Text style={{fontSize: 26, color:'white', marginLeft: 20}}>{title}</Text>
-        <MovieList
-          movies={searchResult}
-          isHorizontal={false}
-        />
-      </>
-    )
-  }
-
   renderSearchIcon = () => {
     return (
       <TouchableOpacity onPress={() => this.searchMovie()}>
@@ -81,7 +68,17 @@ class MainScreen extends Component {
   }
 
   renderHeader = () => {
-    const { searchKey, searchCategory } = this.state;
+    const { searchKey, searchCategory, searchResult, selectedMovie } = this.state;
+
+    if (selectedMovie) {
+      return (
+        <View style={styles.header}>
+        <View style={{justifyContent: 'center'}}>
+          <Text style={{fontSize: 28, color: 'red'}}>Movie Forum</Text>
+        </View>
+      </View>
+      )
+    }
 
     return (
       <View style={styles.header}>
@@ -92,7 +89,7 @@ class MainScreen extends Component {
           searchIcon={this.renderSearchIcon()}
           containerStyle={{flex: 1, backgroundColor: 'black', paddingHorizontal: 20}}
           placeholder="Type Here..."
-          onChangeText={(text) => this.setState({searchKey: text})}
+          onChangeText={(text) => this.setState({searchKey: text, searchResult: null})}
           onClear={() => this.setState({searchKey: SEARCH_KEY_DEFAULT, searchResult: null})}
           value={searchKey}
         />
@@ -110,14 +107,8 @@ class MainScreen extends Component {
 
   // #endregion
 
-  // #region Movies
   renderTrendingMovie = () => {
     const { searchResult } = this.state;
-
-    if (searchResult) {
-      return null;
-    }
-
     const imagePath = 'https://image.tmdb.org/t/p/original/4IzdfRrxgbvtnE0ZBNEjlcFcxgc.jpg';
 
     return (
@@ -130,39 +121,64 @@ class MainScreen extends Component {
         </View>
       </View>
     )
-  }
+  };
 
-  renderMovies = () => {
-    // get all the data from states
-    const { mostPopular, highestRated, recommendations } = this.state;
+  renderMainSection = () => {
+    const { selectedMovie, searchKey, searchResult, mostPopular, highestRated, recommendations, isLoading } = this.state;
 
-    return (
-      <>
-        <View style={{margin: 20}}>
-          <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Most Popular</Text>
+    if (isLoading) {
+      return <Text style={{fontSize: 30, color: 'white'}}>Searching...</Text>
+    } else if (selectedMovie) {
+      return (
+        <MovieDetail
+          movie={selectedMovie}
+          onClose={() => this.setState({selectedMovie: null})}
+        />
+      )
+    } else if (searchResult) {
+      const title = `Results for ${searchKey}`;
+      return (
+        <>
+          <Text style={{fontSize: 26, color:'white', marginLeft: 20}}>{title}</Text>
           <MovieList
-            movies={mostPopular}
-            isHorizontal={true}
+            movies={searchResult}
+            isHorizontal={false}
+            onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
           />
-        </View>
-        <View style={{margin: 20}}>
-          <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Highest Rated</Text>
-          <MovieList
-            movies={mostPopular}
-            isHorizontal={true}
-          />
-        </View>
-        <View style={{margin: 20}}>
-          <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Pick For You</Text>
-          <MovieList
-            movies={mostPopular}
-            isHorizontal={true}
-          />
-        </View>
-      </>
-    )
+        </>
+      )
+    } else {
+      return (
+        <>
+          {this.renderTrendingMovie()}
+          <View style={{margin: 20}}>
+            <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Most Popular</Text>
+            <MovieList
+              movies={mostPopular}
+              isHorizontal={true}
+              onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
+            />
+          </View>
+          <View style={{margin: 20}}>
+            <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Highest Rated</Text>
+            <MovieList
+              movies={highestRated}
+              isHorizontal={true}
+              onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
+            />
+          </View>
+          <View style={{margin: 20}}>
+            <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Pick For You</Text>
+            <MovieList
+              movies={recommendations}
+              isHorizontal={true}
+              onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
+            />
+          </View>
+        </>
+      )
+    }
   }
-  // #endregion
 
   render() {
     const { searchResult, isLoading } = this.state;
@@ -177,8 +193,7 @@ class MainScreen extends Component {
             <RefreshControl refreshing={isLoading} onRefresh={this.fetchMovies} />
           }
           >
-          {this.renderTrendingMovie()}
-          {searchResult === null ? this.renderMovies() : this.renderSearchResult()}
+          {this.renderMainSection()}
         </ScrollView>
       </View>
     )

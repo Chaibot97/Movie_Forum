@@ -1,16 +1,60 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity, Image } from 'react-native';
 
-const MovieList = ({ movies, onMovieSelected, isHorizontal}) => {
+class MovieList extends Component {
+  constructor(props) {
+    super(props);
 
-  // function to render single movie 
-  const renderMovieVertical = (movie, isHorizontal) => {
+    const { movie, onMovieSelected, isHorizontal } = props;
+    this.state = {
+      validMovies: [],
+      isLoading: false
+    };
+  }
+
+  componentDidMount() {
+    this.addValidMovies();
+  }
+
+  // add movies with valid url to the list
+  addValidMovies = async () => {
+    // start loading screen
+    this.setState({isLoading: true});
+
+    // check movies
+    const { movies } = this.props;
+    const validMovies = [];
+    for (let i = 0; i < movies.length; i += 1) {
+      const movie = movies[i];
+      const { poster_url } = movie;
+    
+      if (poster_url) {
+        const imageUri = `https://image.tmdb.org/t/p/original${poster_url}`;
+        const res = await fetch(imageUri);
+        if (res.status !== 404) {
+          console.log(res);
+          validMovies.push(movie);
+        }
+
+        if (validMovies.length === 10) {
+          break;
+        }
+      }
+    }
+
+    // update the state
+    this.setState({isLoading: false, validMovies});
+  };
+
+  renderMovieVertical = (movie) => {
     // extract the detail information
-    const { imageUri, homepage, title, director, actors, rating, genres, language } = movie;
+    const { poster_url, homepage, title, director, actors, rating, genres, language } = movie;
+
+    // call back function
+    const { onMovieSelected } = this.props;
 
     // build image path
-    // let imagePath = `https://image.tmdb.org/t/p/original${imageUri}`;
-    const imagePath = 'https://image.tmdb.org/t/p/original/7G9915LfUQ2lVfwMEEhDsn3kT4B.jpg';
+    const imagePath = `https://image.tmdb.org/t/p/original${poster_url}`;
 
     // render the movie
     return (
@@ -24,21 +68,26 @@ const MovieList = ({ movies, onMovieSelected, isHorizontal}) => {
         </View>
       </View>
     )
-  }
+  };
 
-  const renderMovieHorizontal = (movie, isHorizontal) => {
+  renderMovieHorizontal = (movie) => {
     // extract the detail information
-    const { imageUri, homepage, title, director, actors, rating, genres, language } = movie;
+    const { poster_url, homepage, title, director, actors, rating, genres, language } = movie;
+
+    // call back function
+    const { onMovieSelected } = this.props;
 
     // build image path
-    // let imagePath = `https://image.tmdb.org/t/p/original${imageUri}`;
-    const imagePath = 'https://image.tmdb.org/t/p/original/7G9915LfUQ2lVfwMEEhDsn3kT4B.jpg';
+    const imagePath = `https://image.tmdb.org/t/p/original${poster_url}`;
 
     // render the movie
     return (
       <View style={[styles.movieCard, {flexDirection: 'row'}]}>
         <TouchableOpacity onPress={() => onMovieSelected(movie)}>
-          <Image source={{uri: imagePath}} style={{height: 450, width: 300, resizeMode: 'cover'}}/>
+          <Image 
+            source={{uri: imagePath}}
+            style={{height: 450, width: 300, resizeMode: 'cover'}}
+          />
         </TouchableOpacity>
         <View style={{paddingLeft: 20, paddingVertical: 10}}>
           <Text style={{fontWeight: 'bold', fontSize: 18, color: '#37a9b8'}}>{title}</Text>
@@ -46,19 +95,31 @@ const MovieList = ({ movies, onMovieSelected, isHorizontal}) => {
         </View>
       </View>
     )
-  }
+  };
 
-  // render the flatList
-  return (
-    <ScrollView style={{flex: 1, backgroundColor: 'black'}}>
+  renderList = () => {
+    const { validMovies, isLoading } = this.state;
+    const { isHorizontal } = this.props;
+
+    if (isLoading) {
+      return <Text style={{fontSize: 20, color: 'white'}}>Validating...</Text>
+    }
+    return (
       <FlatList
         horizontal={isHorizontal}
-        data={movies}
-        renderItem={({item}) => isHorizontal ? renderMovieVertical(item) : renderMovieHorizontal(item)}
-        keyExtractor={item => item.id}
+        data={validMovies}
+        renderItem={({item}) => isHorizontal ? this.renderMovieVertical(item) : this.renderMovieHorizontal(item)}          keyExtractor={item => item.id}
       />
-    </ScrollView>
-  )
+    )
+  }
+
+  render() {
+    return (
+      <View style={styles.movieCard}>
+        {this.renderList()}
+      </View>
+    )
+  }
 }
 
 const styles = StyleSheet.create({
