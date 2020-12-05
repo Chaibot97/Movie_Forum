@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, Image, Picker, TouchableOpacity, ScrollView, Dimensions, RefreshControl } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Image, Picker, TouchableOpacity, ScrollView, Dimensions, RefreshControl } from 'react-native';
 import { SearchBar } from 'react-native-elements';
+import AsyncStorage from '@react-native-community/async-storage'
 
 import MovieList from '../components/MovieList';
 import MovieDetail from '../components/MovieDetail';
-import { getPopularMovies, getHighestRatedMovies, getRecommendations, searchMovieByKey } from '../api/dbo';
+import { getPopularMovies, getHighestRatedMovies, getRecommendations, searchMovieByName, searchMovieByActorName } from '../api/dbo';
 
 const SEARCH_KEY_DEFAULT = '';
 const SEARCH_CAT_DEFAULT = 'movieName';
@@ -15,6 +16,8 @@ class MainScreen extends Component {
     super(props);
 
     this.state = {
+      userEmailInput: '',
+      userEmail: '',
       mostPopular: [],
       highestRated: [],
       recommendations: [],
@@ -29,6 +32,9 @@ class MainScreen extends Component {
   componentDidMount() {
     // update movies
     this.fetchMovies();
+
+    // auto login
+    this.autoLogin();
   }
 
   // #region Fetch Movies
@@ -49,12 +55,16 @@ class MainScreen extends Component {
 
   // #region Search Bar
 
+  reset = () => {
+    this.setState({searchKey: '', searchResult: null, selectedMovie: null});
+  }
+
   searchMovie = async () => {
     const { searchKey, searchCategory } = this.state;
 
     if (searchKey && searchKey !== '') {
       this.setState({isLoading: true});
-      const res = await searchMovieByKey(searchKey, searchCategory);
+      const res = searchCategory === 'movieName' ? await searchMovieByName(searchKey) : await searchMovieByActorName(searchKey);
       this.setState({isLoading: false, searchResult: res});
     }
   }
@@ -68,23 +78,27 @@ class MainScreen extends Component {
   }
 
   renderHeader = () => {
-    const { searchKey, searchCategory, searchResult, selectedMovie } = this.state;
+    const { searchKey, userEmail, searchCategory, searchResult, selectedMovie } = this.state;
 
-    if (selectedMovie) {
+    if (selectedMovie || (!userEmail || userEmail === '')) {
       return (
         <View style={styles.header}>
-        <View style={{justifyContent: 'center'}}>
-          <Text style={{fontSize: 28, color: 'red'}}>Movie Forum</Text>
-        </View>
+        <TouchableOpacity 
+          onPress={() => this.reset()}
+          style={{justifyContent: 'center', borderWidth: 2, borderColor: 'red', padding: 3}}>
+          <Text style={{fontSize: 28, color: 'red', fontWeight: 'bold', fontFamily: 'Chalkduster'}}>Movie Forum</Text>
+        </TouchableOpacity>
       </View>
       )
     }
 
     return (
       <View style={styles.header}>
-        <View style={{justifyContent: 'center'}}>
-          <Text style={{fontSize: 28, color: 'red'}}>Movie Forum</Text>
-        </View>
+        <TouchableOpacity 
+          onPress={() => this.reset()}
+          style={{justifyContent: 'center', borderWidth: 2, borderColor: 'red', padding: 3}}>
+          <Text style={{fontSize: 28, color: 'red', fontWeight: 'bold', fontFamily: 'Chalkduster'}}>Movie Forum</Text>
+        </TouchableOpacity>
         <SearchBar
           searchIcon={this.renderSearchIcon()}
           containerStyle={{flex: 1, backgroundColor: 'black', paddingHorizontal: 20}}
@@ -98,8 +112,16 @@ class MainScreen extends Component {
           onValueChange={(category) => this.setState({searchCategory: category})}
         >
           <Picker.Item style={{color: 'white'}} label="Movie Name" value="movieName"/>
-          <Picker.Item label="Crew Name" value="crewName"/>
+          <Picker.Item label="Actor Name" value="actorName"/>
         </Picker>
+        <View style={{marginHorizontal: 15}}>
+          <Text style={{color: 'white'}}>Welcome,</Text>
+          <Text style={{color: 'white'}}>{userEmail}</Text>
+        </View>
+        <Button
+          title='Logout'
+          onPress={() => this.logout()}
+        />
    
       </View>
     )
@@ -107,32 +129,78 @@ class MainScreen extends Component {
 
   // #endregion
 
-  renderTrendingMovie = () => {
-    const { searchResult } = this.state;
-    const imagePath = 'https://image.tmdb.org/t/p/original/4IzdfRrxgbvtnE0ZBNEjlcFcxgc.jpg';
+  // #region Login
 
-    return (
-      <View style = {{margin: 20}}>
-        <View >
-          <Image source={{uri: imagePath}} style={{height: (SCREEN_WIDTH - 40) / 2, width: SCREEN_WIDTH - 40, resizeMode: 'cover'}}/>
-        </View>
-        <View style={{position: 'absolute', left: 20, bottom: 20,}}>
-          <Text style={{fontSize: 40, fontFamily: 'Iowan Old Style'}}>It's Okay to Not Be Okay</Text>
-        </View>
-      </View>
-    )
-  };
+  renderLogin = () => (
+    <View style={{alignSelf: 'center', marginTop: 'auto', marginBottom: 'auto'}}>
+      <Text style={{color: 'white', font: 24}}>What is your email address?</Text>
+      <TextInput
+        style={{ height: 40, borderColor: 'gray', borderWidth: 1, backgroundColor: 'white'}}
+        onChangeText={userEmailInput => {this.setState({userEmailInput})}}
+        value={this.state.userEmailInput}
+      />
+      <Button
+        title="LOGIN"
+        onPress={() => this.login()}
+      />
+    </View>
+  )
+
+  login = async() => {
+    // get the user's input email in the text input element
+    const { userEmailInput } = this.state;
+
+    // store it locally
+    try {
+      AsyncStorage.setItem('userEmail', userEmailInput, (error) => {
+        if (!error) {
+          this.setState({userEmail: userEmailInput})
+        }
+      });
+    } catch(e) {
+      console.log(e);
+    }
+  }
+
+  autoLogin = async() => {
+    try {
+      const userEmail = await AsyncStorage.getItem('userEmail');
+      if (userEmail) {
+        this.setState({userEmail});
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  logout = () => {
+    try {
+      AsyncStorage.removeItem('userEmail', (error) => {
+        if (!error) {
+          this.setState({userEmail: null});
+        }
+      })
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  // //#endregion
 
   renderMainSection = () => {
-    const { selectedMovie, searchKey, searchResult, mostPopular, highestRated, recommendations, isLoading } = this.state;
+    const { userEmail, selectedMovie, searchKey, searchResult, mostPopular, highestRated, recommendations, isLoading } = this.state;
 
     if (isLoading) {
       return <Text style={{fontSize: 30, color: 'white'}}>Searching...</Text>
-    } else if (selectedMovie) {
+    } else if (!userEmail || userEmail === '') {
+      return this.renderLogin();
+    }
+    else if (selectedMovie) {
       return (
         <MovieDetail
           movie={selectedMovie}
           onClose={() => this.setState({selectedMovie: null})}
+          userEmail={userEmail}
         />
       )
     } else if (searchResult) {
@@ -150,7 +218,6 @@ class MainScreen extends Component {
     } else {
       return (
         <>
-          {this.renderTrendingMovie()}
           <View style={{margin: 20}}>
             <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Most Popular</Text>
             <MovieList

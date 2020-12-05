@@ -158,13 +158,13 @@ app.get('/review/:id', (req, res) => {
   console.log('GET', req.originalUrl);
   const { id } = req.params;
   const query = {
-    text: 'SELECT review, user_name FROM moviedb.movie_review, moviedb.review WHERE movie_id = $1 and review_id = id',
+    text: 'SELECT id, review as comment, user_name AS email FROM moviedb.movie_review, moviedb.review WHERE movie_id = $1 and review_id = id',
     values: [id],
   };
   send_query(query, res);
 })
 
-app.get('/review/add/:id/:review/:user', (req, res) => {  
+app.post('/review/add/:id/:review/:user', (req, res) => {  
   console.log('GET', req.originalUrl);
   const { id,review,user } = req.params;
   const query = {

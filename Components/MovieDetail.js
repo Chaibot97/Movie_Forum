@@ -28,7 +28,6 @@ class MovieCard extends Component {
     this.setState({ isLoading: true });
     const comments = await getCommentsByMovieId(id);
     this.setState({ comments, isLoading: false });
-    console.log(comments);
   }
 
   renderMovieComment = (item) => {
@@ -69,12 +68,12 @@ class MovieCard extends Component {
   }
 
   submitComment = async () => {
-    const { newComment, comments } = this.state;
-    const { id } = this.props.movie;
-    const nc = {id: comments.length+1, email: 'test', comment: newComment}
-    console.log(comments);
-    await postComment(id, null, newComment);
-    this.setState({ isLoading: true, newComment: '', comments: [...comments,  nc]});
+    const { userEmail, movie } = this.props;
+    const { newComment } = this.state;
+    const { id } = movie;
+    const nc = {email: userEmail, comment: newComment}
+    await postComment(id, userEmail, newComment);
+    this.fetchMovieComments();
   }
 
   renderMovieDetail = () => {
