@@ -22,5 +22,19 @@ Details for movie with `ID`
 - `/collection/ID`
 - `/review/ID`
 
-User functions
-- `/review/add/ID/REVIEW/USER`
+### User functions
+To get user id
+
+- GET `/login/YALEID/`
+- GET `/register/YALEID/`
+
+
+To get comments
+
+- POST `/review/add/ID/REVIEW/USER`
+
+
+To get and update likes
+- GET `/likes/USERID`
+- POST `/like/MOVIEID/USERID`
+- POST `/unlike/MOVIEID/USERID`

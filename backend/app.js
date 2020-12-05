@@ -165,7 +165,7 @@ app.get('/review/:id', (req, res) => {
 })
 
 app.post('/review/add/:id/:review/:user', (req, res) => {  
-  console.log('GET', req.originalUrl);
+  console.log('POST', req.originalUrl);
   const { id,review,user } = req.params;
   const query = {
     text: `WITH isrt AS (INSERT INTO moviedb.review (review, user_name) VALUES ('${review}','${user}') RETURNING *)
@@ -173,6 +173,54 @@ app.post('/review/add/:id/:review/:user', (req, res) => {
         VALUES (${id}, (SELECT id from isrt)) RETURNING *`,
   };
 
+  send_query(query, res);
+})
+
+app.get('/likes/:userid', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { userid } = req.params;
+  const query = {
+    text: 'SELECT m.id, m.title FROM moviedb.movie m, moviedb.like l, moviedb.user u WHERE l.movie_id = m.id AND u.id = l.user_id AND u.id = $1',
+    values: [userid],
+  };
+  send_query(query, res);
+})
+
+app.post('/like/:movieid/:userid', (req, res) => {  
+  console.log('POST', req.originalUrl);
+  const { movieid, userid } = req.params;
+  const query = {
+    text: 'INSERT INTO moviedb.like (user_id, movie_id) VALUES ($2,$1)',
+    values: [movieid, userid],
+  };
+  send_query(query, res);
+})
+
+app.post('/unlike/:movieid/:userid', (req, res) => {  
+  console.log('POST', req.originalUrl);
+  const { movieid, userid } = req.params;
+  const query = {
+    text: 'DELETE FROM moviedb.like WHERE user_id = $2 AND movie_id =$1',
+    values: [movieid, userid],
+  };
+  send_query(query, res);
+})
+
+app.get('/login/:yaleid/', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { yaleid } = req.params;
+  const query = {
+    text: `SELECT id FROM moviedb.user WHERE yale_id = '${yaleid}'`,
+  };
+  send_query(query, res);
+})
+
+app.get('/register/:yaleid/', (req, res) => {  
+  console.log('GET', req.originalUrl);
+  const { yaleid } = req.params;
+  const query = {
+    text: `INSERT INTO moviedb.user (yale_id) VALUES ('${yaleid}') RETURNING id`,
+  };
   send_query(query, res);
 })
 
