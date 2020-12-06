@@ -40,29 +40,27 @@ const send_movie_query = (query, res) => {
     text: 'SELECT name, character, profile_url FROM moviedb.movie_cast t, moviedb.actor WHERE movie_id = $1 and actor_id = id ORDER BY t.order',
   };
   db.query(query)
-    .then((data) => {
-      return Promise.all(data.rows.map((r) => {
-        const new_r = r;
+    .then(async (data) => {
+      for (const r of data.rows) {
         castQuery.values = [r.id];
-        return db.query(castQuery)
+        await db.query(castQuery)
           .then((castData) => {
-            new_r.actors = castData.rows;
-            return new_r;
+            r.actors = castData.rows;
           });
-      }));
+      };
+      return data;
     })
-    .then((data) => {
-      return Promise.all(data.map((r) => {
-        const new_r = r;
+    .then(async (data) => {
+      for (const r of data.rows) {
         crewQuery.values = [r.id];
-        return db.query(crewQuery)
-          .then((crewData) => {
-            new_r.crews = crewData.rows;
-            return new_r;
-          });
-      }));
+        await db.query(crewQuery)
+        .then((crewData) => {
+          r.crews = crewData.rows;
+        });
+      };
+      return data;
     })
-    .then((data)=>res.send(data))
+    .then((data)=>res.send(data.rows))
     .catch(e => console.error(e.stack))
 }
 
