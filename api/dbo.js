@@ -111,4 +111,18 @@ export const postComment = async (movieId, userEmail, comment ) => {
   }
 }
 
+export const loginUserDB = async (userEmail) => {
+  try {
+    const res = await instance.get(`/login/${userEmail}`);
+    if (res.data.length === 0) {
+      await instance.post(`register/${userEmail}`);
+      console.log('register');
+    } else {
+      console.log('already registered');
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 export default instance;

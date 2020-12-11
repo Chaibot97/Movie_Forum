@@ -213,7 +213,7 @@ app.get('/login/:yaleid/', (req, res) => {
   send_query(query, res);
 })
 
-app.get('/register/:yaleid/', (req, res) => {  
+app.post('/register/:yaleid/', (req, res) => {  
   console.log('GET', req.originalUrl);
   const { yaleid } = req.params;
   const query = {

@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-community/async-storage'
 
 import MovieList from '../components/MovieList';
 import MovieDetail from '../components/MovieDetail';
-import { getPopularMovies, getHighestRatedMovies, getRecommendations, searchMovieByName, searchMovieByActorName } from '../api/dbo';
+import { getPopularMovies, getHighestRatedMovies, getRecommendations, searchMovieByName, searchMovieByActorName, loginUserDB } from '../api/dbo';
 
 const SEARCH_KEY_DEFAULT = '';
 const SEARCH_CAT_DEFAULT = 'movieName';
@@ -154,7 +154,8 @@ class MainScreen extends Component {
     try {
       AsyncStorage.setItem('userEmail', userEmailInput, (error) => {
         if (!error) {
-          this.setState({userEmail: userEmailInput})
+          this.setState({userEmail: userEmailInput});
+          loginUserDB(userEmailInput);
         }
       });
     } catch(e) {
