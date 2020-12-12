@@ -89,7 +89,7 @@ class MovieDetail extends Component {
 
     // concatenate the actors
     let actorNames = "";
-    for (let i = 0; i < Math.min(actors.length, 10); i += 1) {
+    for (let i = 0; i < actors.length; i += 1) {
       const { name } = actors[i];
       actorNames += name + ", ";
     }

@@ -100,6 +100,16 @@ class MainScreen extends Component {
     if (searchKey && searchKey !== '') {
       this.setState({isLoading: true});
       const res = searchCategory === 'movieName' ? await searchMovieByName(searchKey) : await searchMovieByActorName(searchKey);
+
+      // filter out the duplicate movies
+      const searchResult = [];
+      const idSet = new Set();
+      for (let i = 0; i < res.length; i += 1) {
+        if (!idSet.has(res[i].id)) {
+          searchResult.push(res[i]);
+          idSet.add(res[i].id);
+        }
+      }
       this.setState({isLoading: false, searchResult: res});
     }
   }

@@ -102,7 +102,7 @@ class MovieList extends Component {
     const { isHorizontal, shouldValidate, movies} = this.props;
 
     if (isLoading) {
-      return <Text style={{fontSize: 20, color: 'white'}}>Validating...</Text>
+      return <Text style={{fontSize: 20, color: 'white'}}>Validating the image path...This may take some time...</Text>
     }
     return (
       <FlatList
