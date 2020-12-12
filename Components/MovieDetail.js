@@ -55,9 +55,11 @@ class MovieDetail extends Component {
         <br/>
         <Text style={{color: 'white'}}>Enter your comments</Text>
         <TextInput
-          style={{ height: 40, borderColor: 'gray', borderWidth: 1, backgroundColor: 'white'}}
+          style={{ height: 40, borderColor: 'gray', borderWidth: 1, backgroundColor: 'white', padding: 5}}
           onChangeText={text => this.setState({ newComment: text })}
           value={newComment}
+          multiline = {true}
+          numberOfLines = {4}
         />
         <Button
           onPress={this.submitComment}

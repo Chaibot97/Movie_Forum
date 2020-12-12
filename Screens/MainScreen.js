@@ -147,10 +147,12 @@ class MainScreen extends Component {
         <SearchBar
           searchIcon={this.renderSearchIcon()}
           containerStyle={{flex: 1, backgroundColor: 'black', paddingHorizontal: 20}}
+          inputStyle={{padding: 5}}
           placeholder="Type Here..."
           onChangeText={(text) => this.setState({searchKey: text, searchResult: null})}
           onClear={() => this.setState({searchKey: SEARCH_KEY_DEFAULT, searchResult: null})}
           value={searchKey}
+          onSubmitEditing={() => this.searchMovie()}
         />
         <Picker 
           selectedValue={searchCategory} style={{ height: 30, width: 120, color: 'white', backgroundColor: 'black'}}
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     backgroundColor: 'black'
-  },
+  }
 })
 
 export default MainScreen;
