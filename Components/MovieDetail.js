@@ -4,16 +4,16 @@ import { withNavigation } from 'react-navigation';
 
 import { getCommentsByMovieId, postComment } from '../api/dbo';
 
-class MovieCard extends Component {
+class MovieDetail extends Component {
   constructor(props) {
     super(props);
 
-    const { movie, onClose } = this.props;
+    const { movie } = this.props;
 
     this.state = {
       comments: [],
       isLoading: false,
-      newComment: ''
+      newComment: '',
     }
   };
 
@@ -68,18 +68,32 @@ class MovieCard extends Component {
   }
 
   submitComment = async () => {
-    const { userEmail, movie } = this.props;
+    const { userName, movie } = this.props;
     const { newComment } = this.state;
     const { id } = movie;
-    const nc = {email: userEmail, comment: newComment}
-    await postComment(id, userEmail, newComment);
+    await postComment(id, userName, newComment);
     this.fetchMovieComments();
   }
 
   renderMovieDetail = () => {
-    const { movie } = this.props;
-    const { poster_url, title, language, overview, vote_avg,  vote_count } = movie;
+    const { movie, like, dislike, userLikes } = this.props;
+    const { poster_url, title, language, overview, vote_avg,  vote_count, id, actors } = movie;
     const imagePath = `https://image.tmdb.org/t/p/original${poster_url}`;
+
+    let likeThisMovie = false;
+    for (let i = 0; i < userLikes.length; i += 1) {
+      if (userLikes[i].id === movie.id) {
+        likeThisMovie = true;
+      }
+    }
+
+    // concatenate the actors
+    let actorNames = "";
+    for (let i = 0; i < Math.min(actors.length, 10); i += 1) {
+      const { name } = actors[i];
+      actorNames += name + ", ";
+    }
+    actorNames = actorNames.substr(0, actorNames.length-2);
 
     return (
       <>
@@ -90,11 +104,34 @@ class MovieCard extends Component {
             <br/>
             <Text style={{color: '#37a9b8'}}>Language: {language}</Text>
             <br/>
+            <Text style={{color: '#37a9b8'}}>Actors:</Text>
+            <Text style={{color: '#37a9b8'}}>{actorNames}</Text>
+            <br/>
             <Text style={{color: '#37a9b8'}}>Vote Average: {vote_avg}</Text>
             <br/>
             <Text style={{color: '#37a9b8'}}>Vote Count: {vote_count}</Text>
             <br/>
             <Text style={{color: '#37a9b8'}}>{overview}</Text>
+            <br/>
+            <View style={{width: 100}}>
+              {
+                likeThisMovie ? 
+                (
+                  <Button
+                    style={{width: 30}}
+                    onPress={() => dislike(movie.id)}
+                    color="#f194ff"
+                    title="Dislike"
+                  />
+                ) : (
+                  <Button
+                    style={{width: 30}}
+                    onPress={() => like(movie.id)}
+                    title="Like it!"
+                  />
+                )
+              }
+            </View>
           </View>
         </View>
         {this.renderMovieComments()}
@@ -134,4 +171,4 @@ const styles = StyleSheet.create({
   }
 })
 
-export default withNavigation(MovieCard);
+export default withNavigation(MovieDetail);

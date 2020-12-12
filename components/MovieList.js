@@ -99,7 +99,7 @@ class MovieList extends Component {
 
   renderList = () => {
     const { validMovies, isLoading } = this.state;
-    const { isHorizontal } = this.props;
+    const { isHorizontal, shouldValidate, movies} = this.props;
 
     if (isLoading) {
       return <Text style={{fontSize: 20, color: 'white'}}>Validating...</Text>
@@ -107,13 +107,14 @@ class MovieList extends Component {
     return (
       <FlatList
         horizontal={isHorizontal}
-        data={validMovies}
+        data={shouldValidate ? validMovies : movies}
         renderItem={({item}) => isHorizontal ? this.renderMovieVertical(item) : this.renderMovieHorizontal(item)}          keyExtractor={item => item.id}
       />
     )
   }
 
   render() {
+
     return (
       <View style={styles.movieCard}>
         {this.renderList()}

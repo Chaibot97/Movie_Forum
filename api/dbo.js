@@ -4,12 +4,14 @@ const instance = axios.create({
   baseURL: 'http://localhost:6886'
 });
 
-const DEFAULT_COUNT = 10;
+const DEFAULT_COUNT = 50;
 
 export const getPopularMovies = async (count) => {
   const c = count ? count : DEFAULT_COUNT;
   try {
     const res = await instance.get(`/movies/${c}`);
+    console.log('popular!')
+    console.log(res);
     return res.data;
   } catch (err) {
     console.log(err);
@@ -28,16 +30,17 @@ export const getHighestRatedMovies = async (count) => {
   }
 };
 
-export const getRecommendations = async (userID, count) => {
-  const c = count ? count : DEFAULT_COUNT;
-  try {
-    const res = await instance.get(`/movies/${c}`);
-    return res.data;
-  } catch (err) {
-    console.log(err);
-    return [];
+export const searchMovieById = async (id) => {
+  if (id) {
+    try {
+      const res = await instance.get(`/movie/${id}`);
+      return res.data;
+    } catch (error) {
+      console.log(error);
+      return []
+    }
   }
-};
+}
 
 export const searchMovieByName = async (key, count) => {
   const c = count ? count : DEFAULT_COUNT;
@@ -78,29 +81,6 @@ export const getCommentsByMovieId = async (id) => {
       return [];
     }
   }
-  // const result = [
-  //   {
-  //     id: 1,
-  //     email: 'sihan.sun@yale.edu',
-  //     comment: 'such a good movie!'
-  //   }, {
-  //     id: 2,
-  //     email: 'lizhou.cai@yale.edu',
-  //     comment: 'I have watched this movie 10 times. Like it!'
-  //   }, {
-  //     id: 3,
-  //     email: 'jiaqi.yang@yale.edu',
-  //     comment: 'Worst movie I have ever seen...'
-  //   }
-  // ];
-
-  // if (id && id != '') {
-  //   const promise = new Promise((onSuccess,onError) => {
-  //     onSuccess(result);
-  //   });
-
-  //   return await promise;
-  // }
 }
 
 export const postComment = async (movieId, userEmail, comment ) => {
@@ -113,15 +93,44 @@ export const postComment = async (movieId, userEmail, comment ) => {
 
 export const loginUserDB = async (userEmail) => {
   try {
-    const res = await instance.get(`/login/${userEmail}`);
+    let res = await instance.get(`/login/${userEmail}`);
     if (res.data.length === 0) {
-      await instance.post(`register/${userEmail}`);
-      console.log('register');
-    } else {
-      console.log('already registered');
-    }
+      res = await instance.post(`/register/${userEmail}`);
+    } 
+    
+    return { id: res.data[0].id };
+  } catch (error) {
+    return { error };
+  }
+}
+
+export const likeMovie = async (userId, movieId) => {
+  console.log(userId);
+  try {
+    await instance.post(`/like/${movieId}/${userId}`);
+    console.log('liked!');
   } catch (error) {
     console.log(error);
+  }
+}
+
+export const dislikeMovie = async (userId, movieId) => {
+  try {
+    await instance.post(`/unlike/${movieId}/${userId}`);
+    console.log('unliked');
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export const getUserLikes = async (userId) => {
+  try {
+    const res = await instance.get(`/likes/${userId}`);
+    console.log(res);
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    return [];
   }
 }
 

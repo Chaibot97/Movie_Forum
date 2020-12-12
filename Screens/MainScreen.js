@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-community/async-storage'
 
 import MovieList from '../components/MovieList';
 import MovieDetail from '../components/MovieDetail';
-import { getPopularMovies, getHighestRatedMovies, getRecommendations, searchMovieByName, searchMovieByActorName, loginUserDB } from '../api/dbo';
+import { getPopularMovies, getHighestRatedMovies, getUserLikes, searchMovieByName, searchMovieByActorName, loginUserDB ,searchMovieById, likeMovie, dislikeMovie } from '../api/dbo';
 
 const SEARCH_KEY_DEFAULT = '';
 const SEARCH_CAT_DEFAULT = 'movieName';
@@ -16,11 +16,13 @@ class MainScreen extends Component {
     super(props);
 
     this.state = {
-      userEmailInput: '',
-      userEmail: '',
+      userNameError: false,
+      userNameInput: '',
+      userName: '',
+      userId: -1,
       mostPopular: [],
       highestRated: [],
-      recommendations: [],
+      userLikes: [],
       searchKey: SEARCH_KEY_DEFAULT,
       searchCategory: SEARCH_CAT_DEFAULT,
       searchResult: null,
@@ -43,12 +45,45 @@ class MainScreen extends Component {
     this.setState({isLoading: true});
 
     // fetch movies
-    let [mostPopular, highestRated, recommendations] = await Promise.all(
-      [getPopularMovies(), getHighestRatedMovies(), getRecommendations()]
+    let [mostPopular, highestRated ] = await Promise.all(
+      [getPopularMovies(), getHighestRatedMovies()]
       );
     
     // update result and end loading
-    this.setState({mostPopular, highestRated, recommendations, isLoading: false});
+    this.setState({mostPopular, highestRated, isLoading: false});
+  }
+
+  // #endregion
+
+  // #region Fav Movies
+
+  fetchFavoriteMovies = async () => {
+    // get all the ids of the movies that the user liked but not added yet
+    const { userId } = this.state;
+    const movieIds = (await getUserLikes(userId)).map((obj) => obj.id);
+
+    // fetch details of all the movies
+    const userLikes = [];
+    for (let i = 0; i < movieIds.length; i += 1) {
+      const id = movieIds[i];
+      const res = await searchMovieById(id);
+      if (res.length === 1)
+      userLikes.push(res[0]);
+    }
+
+    this.setState({userLikes});
+  }
+
+  onLikeMovieSelected = async (movieId) => {
+    const { userId } = this.state;
+    await likeMovie(userId, movieId);
+    this.fetchFavoriteMovies();
+  }
+
+  onDislikeMovieSelected = async (movieId) => {
+    const { userId } = this.state;
+    await dislikeMovie(userId, movieId);
+    this.fetchFavoriteMovies();
   }
 
   // #endregion
@@ -78,9 +113,9 @@ class MainScreen extends Component {
   }
 
   renderHeader = () => {
-    const { searchKey, userEmail, searchCategory, searchResult, selectedMovie } = this.state;
+    const { searchKey, userName, searchCategory, searchResult, selectedMovie } = this.state;
 
-    if (selectedMovie || (!userEmail || userEmail === '')) {
+    if (selectedMovie || (!userName || userName === '')) {
       return (
         <View style={styles.header}>
         <TouchableOpacity 
@@ -116,7 +151,7 @@ class MainScreen extends Component {
         </Picker>
         <View style={{marginHorizontal: 15}}>
           <Text style={{color: 'white'}}>Welcome,</Text>
-          <Text style={{color: 'white'}}>{userEmail}</Text>
+          <Text style={{color: 'white'}}>{userName}</Text>
         </View>
         <Button
           title='Logout'
@@ -132,42 +167,65 @@ class MainScreen extends Component {
   // #region Login
 
   renderLogin = () => (
-    <View style={{alignSelf: 'center', marginTop: 'auto', marginBottom: 'auto'}}>
-      <Text style={{color: 'white', font: 24}}>What is your email address?</Text>
+    <View style={{alignSelf: 'center', marginTop: 'auto', marginBottom: 'auto', width: 300}}>
+      <Text style={{color: 'white', font: 24}}>What is your userName?</Text>
       <TextInput
         style={{ height: 40, borderColor: 'gray', borderWidth: 1, backgroundColor: 'white'}}
-        onChangeText={userEmailInput => {this.setState({userEmailInput})}}
-        value={this.state.userEmailInput}
+        onChangeText={userNameInput => {this.setState({userNameInput})}}
+        value={this.state.userNameInput}
       />
       <Button
         title="LOGIN"
         onPress={() => this.login()}
       />
+      {
+        this.state.userNameError ? 
+        (
+          <Text style={{color:'red'}}>Username should be less than 10 characters.</Text>
+        ) : null
+      }
     </View>
   )
 
-  login = async() => {
+  login = async () => {
     // get the user's input email in the text input element
-    const { userEmailInput } = this.state;
+    const { userNameInput } = this.state;
 
-    // store it locally
-    try {
-      AsyncStorage.setItem('userEmail', userEmailInput, (error) => {
-        if (!error) {
-          this.setState({userEmail: userEmailInput});
-          loginUserDB(userEmailInput);
-        }
-      });
-    } catch(e) {
-      console.log(e);
+    if (!userNameInput || userNameInput === '') {
+      return;
     }
+
+    if (userNameInput.length >= 10) {
+      this.setState({userNameError: true});
+      return;
+    }
+
+    this.setState({userNameError: false});
+
+    // try loginDB
+    const res = await loginUserDB(userNameInput);
+    if (res && !res.error) {
+      try {
+        const userId = res.id;
+        const userName = userNameInput;
+        await AsyncStorage.setItem('userName', userName);
+        await AsyncStorage.setItem('userId', userId);
+        this.setState({ userName, userId });
+        this.fetchFavoriteMovies();
+      } catch (error) {
+        console.log(error);
+      }
+    };
   }
 
   autoLogin = async() => {
     try {
-      const userEmail = await AsyncStorage.getItem('userEmail');
-      if (userEmail) {
-        this.setState({userEmail});
+      const userName = await AsyncStorage.getItem('userName');
+      const userId = await AsyncStorage.getItem('userId');
+      if (userName && userId) {
+        this.setState({ userName, userId }, () => {
+          this.fetchFavoriteMovies();
+        });
       }
     } catch (e) {
       console.log(e);
@@ -175,33 +233,40 @@ class MainScreen extends Component {
   }
 
   logout = () => {
-    try {
-      AsyncStorage.removeItem('userEmail', (error) => {
-        if (!error) {
-          this.setState({userEmail: null});
-        }
-      })
-    } catch (e) {
-      console.log(e);
-    }
+    this.setState({userName: null, userId: -1});
+    AsyncStorage.removeItem('userName', (error) => {
+      if (error) {
+        console.log(error);
+      }
+    });
+
+    AsyncStorage.removeItem('userId', (error) => {
+      if (error) {
+        console.log(error);
+      }
+    });
   }
 
   // //#endregion
 
   renderMainSection = () => {
-    const { userEmail, selectedMovie, searchKey, searchResult, mostPopular, highestRated, recommendations, isLoading } = this.state;
+    const { userName, userId, selectedMovie, searchKey, searchResult, mostPopular, highestRated, userLikes, isLoading } = this.state;
 
+    // update favorite movies
     if (isLoading) {
       return <Text style={{fontSize: 30, color: 'white'}}>Searching...</Text>
-    } else if (!userEmail || userEmail === '') {
+    } else if (!userName || userName === '' || userId === -1) {
       return this.renderLogin();
     }
     else if (selectedMovie) {
       return (
         <MovieDetail
+          userName={userName}
           movie={selectedMovie}
           onClose={() => this.setState({selectedMovie: null})}
-          userEmail={userEmail}
+          userLikes={userLikes}
+          like={this.onLikeMovieSelected}
+          dislike={this.onDislikeMovieSelected}
         />
       )
     } else if (searchResult) {
@@ -210,6 +275,7 @@ class MainScreen extends Component {
         <>
           <Text style={{fontSize: 26, color:'white', marginLeft: 20}}>{title}</Text>
           <MovieList
+            shouldValidate={true}
             movies={searchResult}
             isHorizontal={false}
             onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
@@ -222,6 +288,7 @@ class MainScreen extends Component {
           <View style={{margin: 20}}>
             <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Most Popular</Text>
             <MovieList
+              shouldValidate={true}
               movies={mostPopular}
               isHorizontal={true}
               onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
@@ -230,15 +297,17 @@ class MainScreen extends Component {
           <View style={{margin: 20}}>
             <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Highest Rated</Text>
             <MovieList
+              shouldValidate={true}
               movies={highestRated}
               isHorizontal={true}
               onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
             />
           </View>
           <View style={{margin: 20}}>
-            <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Pick For You</Text>
+            <Text style={{fontSize: 26, color: 'white', fontWeight: 'bold'}}>Your Favorite Movies</Text>
             <MovieList
-              movies={recommendations}
+              shouldValidate={false}
+              movies={userLikes}
               isHorizontal={true}
               onMovieSelected={(selectedMovie) => this.setState({selectedMovie})}
             />
@@ -249,7 +318,7 @@ class MainScreen extends Component {
   }
 
   render() {
-    const { searchResult, isLoading } = this.state;
+    const { searchResult, isLoading, userId, userLikes } = this.state;
 
     // get all the data from states
     return (

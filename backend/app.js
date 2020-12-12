@@ -68,7 +68,7 @@ app.get('/movies/:limit', (req, res) => {
   console.log('GET', req.originalUrl);
   const { limit } = req.params;
   const query = {
-    text: 'SELECT id,vote_avg, vote_count, poster_url, title, language, overview FROM moviedb.movie ORDER BY id DESC LIMIT $1',
+    text: 'SELECT id,vote_avg, vote_count, poster_url, title, language, overview FROM moviedb.movie WHERE vote_count>5000 LIMIT $1',
     values: [limit],
   };
 
@@ -79,11 +79,21 @@ app.get('/movies/rating/:limit', (req, res) => {
   console.log('GET', req.originalUrl);
   const { limit } = req.params;
   const query = {
-    text: 'SELECT id,vote_avg,vote_count,  poster_url, title, language, overview FROM moviedb.movie WHERE vote_count>100 ORDER BY vote_avg DESC LIMIT $1',
+    text: 'SELECT id,vote_avg,vote_count,  poster_url, title, language, overview FROM moviedb.movie WHERE vote_count>5000 ORDER BY vote_avg DESC LIMIT $1',
     values: [limit],
   };
   send_movie_query(query, res);
 })
+
+app.get('/movie/:id', (req, res) => {
+  console.log('GET', req.originalUrl);
+  const { id } = req.params;
+  const query = {
+    text: 'SELECT id,vote_avg,vote_count,  poster_url, title, language, overview FROM moviedb.movie WHERE id = $1',
+    values: [id],
+  };
+  send_movie_query(query, res);
+});
 
 app.get('/movies/:name/:limit', (req, res) => {  
   console.log('GET', req.originalUrl);
@@ -91,7 +101,7 @@ app.get('/movies/:name/:limit', (req, res) => {
   const query = {
     text: `SELECT id,vote_avg,vote_count,  poster_url, title, language, overview 
     FROM moviedb.movie WHERE LOWER(title) like \'%${name.toLowerCase()}%\' 
-    ORDER BY id DESC LIMIT $1`,
+    ORDER BY vote_count DESC LIMIT $1`,
     values: [limit],
   };
   send_movie_query(query, res);
@@ -106,7 +116,7 @@ app.get('/movies/actor/:name/:limit', (req, res) => {
     JOIN moviedb.movie_cast c ON m.id = c.movie_id 
     JOIN moviedb.actor a ON c.actor_id = a.id
     WHERE LOWER(a.name) like \'%${name.toLowerCase()}%\' 
-    ORDER BY id DESC LIMIT $1`,
+    ORDER BY vote_count DESC LIMIT $1`,
     values: [limit],
   };
   send_movie_query(query, res);
